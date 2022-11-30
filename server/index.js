@@ -129,6 +129,14 @@ function flowToObject(f) {
   return flow;
 }
 
+function hasContract(user, contractAddress) {
+  var allowed = false;
+  if ("contracts" in user) {
+    allowed = user.contracts.includes(contractAddress);
+  } 
+  return allowed;
+}
+
 function cors(req, res, next) {
   res.set('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') {
@@ -277,11 +285,15 @@ api.get("/streams/vestor/new", getAuth, checkOTP, async function (req, res) {
   const result = await userRef.set({
     "contracts": contracts
   }, { merge: true });
-  return res.json({"result": "ok", "address": vestorAddress});
+  return res.json({"result": "ok", "address": vestorAddress, "message": "address for new Vestor contract to manage streams"});
 }); // /streams/vestor/new
 
 api.get("/streams/vestor/deposit", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
+  const userContract = hasContract(req.user, req.q.vestor);
+  if (!userContract) {
+    return res.json({"result": "error", "message": "user does not have permission to this vestor contract"});
+  }
   const vestor = new ethers.Contract(
     req.q.vestor,
     vestorJSON.abi,
@@ -295,14 +307,18 @@ api.get("/streams/vestor/deposit", getAuth, checkOTP, async function (req, res) 
     signer
   );
   // TODO: check that user has permission to depoit this amount from Sidedoor EOA
-  await token.approve(req.q.vestor, params.amount);
+  await token.approve(req.q.vestor, req.q.amount);
   console.log(tokenAddress, req.q.amount, req.q.vestor);
   await vestor.deposit(tokenAddress, req.q.amount);
-  return res.json({"result": "ok"});
+  return res.json({"result": "ok", "message": "deposit successful and upgraded to Super token"});
 }); // /streams/vestor/deposit
 
 api.get("/streams/flow/new", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
+  const userContract = hasContract(req.user, req.q.vestor);
+  if (!userContract) {
+    return res.json({"result": "error", "message": "user does not have permission to this vestor contract"});
+  }
   const vestor = new ethers.Contract(
     req.q.vestor,
     vestorJSON.abi,
@@ -316,8 +332,11 @@ api.get("/streams/flow/new", getAuth, checkOTP, async function (req, res) {
 }); // /streams/flow/new
 
 api.get("/streams/flow/replace", getAuth, checkOTP, async function (req, res) {
-  console.log("req.user", JSON.stringify(req.user));
   getContracts(process.env.ALLOWER_PK, providers[0]);
+  const userContract = hasContract(req.user, req.q.vestor);
+  if (!userContract) {
+    return res.json({"result": "error", "message": "user does not have permission to this vestor contract"});
+  }
   const vestor = new ethers.Contract(
     req.q.vestor,
     vestorJSON.abi,
@@ -345,8 +364,11 @@ api.get("/streams/flow/replace", getAuth, checkOTP, async function (req, res) {
 }); // /streams/flow/new
 
 api.get("/streams/flow/stop", getAuth, checkOTP, async function (req, res) {
-  console.log("req.user", JSON.stringify(req.user));
   getContracts(process.env.ALLOWER_PK, providers[0]);
+  const userContract = hasContract(req.user, req.q.vestor);
+  if (!userContract) {
+    return res.json({"result": "error", "message": "user does not have permission to this vestor contract"});
+  }
   const vestor = new ethers.Contract(
     req.q.vestor,
     vestorJSON.abi,
