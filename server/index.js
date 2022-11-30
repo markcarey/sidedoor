@@ -324,8 +324,6 @@ api.get("/streams/flow/new", getAuth, checkOTP, async function (req, res) {
     vestorJSON.abi,
     signer
   );
-  //var name = ethers.utils.parseBytes32String("0x416c696365000000000000000000000000000000000000000000000000000000");
-  //console.log("name", name);
   await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, req.q.lumpsum, ethers.utils.formatBytes32String(req.q.ref))).wait();
   const flows = await vestor.getFlowRecipient(req.q.recipient);
   return res.json({"result": "ok", "flow": flowToObject(flows[0]), "message": "flow has been added"});
@@ -387,10 +385,13 @@ api.get("/streams/flow/stop", getAuth, checkOTP, async function (req, res) {
     }
   }
   //console.log("flow", flow);
+  var name = "";
   if (flow) {
+    name = ethers.utils.parseBytes32String(flow.ref);
+    //console.log("name", name);
     await (await vestor.closeStream(req.q.recipient, flow.flowIndex)).wait();
   }
-  return res.json({"result": "ok"});
+  return res.json({"result": "ok", "message": `flow ${name} stopped`});
 }); // /streams/flow/stop
 
 module.exports.api = api;
