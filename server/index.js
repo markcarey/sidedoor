@@ -26,18 +26,12 @@ var Mailgen = require('mailgen');
 var postmark = require("postmark");
 
 const safeCoreSDK = require('@gnosis.pm/safe-core-sdk');
-console.log('core');
-console.log(JSON.stringify(safeCoreSDK));
 const Safe = safeCoreSDK.default;
-console.log(Safe);
 const SafeFactory = safeCoreSDK.SafeFactory;
-console.log(SafeFactory);
 
 const safeEthersLib = require('@gnosis.pm/safe-ethers-lib');
 const { getAccountPath } = require('ethers/lib/utils');
-console.log(safeEthersLib);
 const EthersAdapter = safeEthersLib.default;
-console.log(EthersAdapter);
 
 const TV_FACTORY = process.env.TV_FACTORY_GOERLI;
 const API_URL_MUMBAI = process.env.API_URL_MUMBAI;
@@ -48,9 +42,9 @@ const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 var providers = [];
 providers[0] = new ethers.providers.JsonRpcProvider({"url": API_URL_GOERLI});
 
-const vestorJSON = require(__base + 'sidedoor/TokenVestor.json');
-const vestorFactoryJSON = require(__base + 'sidedoor/VestingFactory.json');
-const tokenJSON = require(__base + 'sidedoor/IERC20.json');
+const vestorJSON = require(__base + 'sidedoor/abis/TokenVestor.json');
+const vestorFactoryJSON = require(__base + 'sidedoor/abis/VestingFactory.json');
+const tokenJSON = require(__base + 'sidedoor/abis/IERC20.json');
 
 var signer, vestorFactory;
 
@@ -91,9 +85,8 @@ async function getAuth(req, res, next) {
   var apiKey = null;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     console.log('Found "Authorization" header');
-    // Read the ID Token from the Authorization header.
-    var idToken = req.headers.authorization.split('Bearer ')[1];
-    apiKey = idToken;
+    // Read the API key from the Authorization header.
+    apiKey = req.headers.authorization.split('Bearer ')[1];
   } else {
     //console.log(req.q);
     if ("api_key" in req.q) {
@@ -115,7 +108,7 @@ async function getAuth(req, res, next) {
 }
 
 async function checkOTP(req, res, next) {
-  var valid = notp.totp.verify(req.q.token, req.user.secret);
+  var valid = notp.totp.verify(req.q.otp, req.user.secret);
   if (!valid) {
     return res.json({"result": "error", "error": "invalid or missing one-time password"});
   }
@@ -187,8 +180,8 @@ api.get("/auth/user/new", async function (req, res) {
   };
   var mailer = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
   var response = await mailer.sendEmail(pmEmail);
-  return res.json({ "result": "ok", "mesage": "user created"});
-});
+  return res.json({ "result": "ok", "message": "user created, email verififcation sent"});
+}); // /auth/user/new
 
 api.get("/auth/qrcode", getAuth, async function (req, res) {
   if (!req.user) {
@@ -212,9 +205,9 @@ api.get("/auth/qrcode", getAuth, async function (req, res) {
     });
     return res.end(img);
   } else {
-    return res.json({"result": "ok", "qrcode": qr, "uri": uri, "base32": encodedForGoogle});
+    return res.json({"result": "ok", "qrcode": qr, "uri": uri, "base32": encodedForGoogle, "message": "scan QR code in authenctaior app"});
   }
-});
+}); // /auth/qrcode
 
 api.get("/auth/check", async function (req, res) {
   const address = req.q.address;
@@ -224,7 +217,7 @@ api.get("/auth/check", async function (req, res) {
     res.json({"result": "error", "error": "unknown address" });
   }
   const key = user.data().secret;
-  var valid = notp.totp.verify(req.q.token, key);
+  var valid = notp.totp.verify(req.q.otp, key);
   console.log("valid decoded", valid);
   if ( valid ) {
     if ( user.data().key ) {
@@ -234,14 +227,14 @@ api.get("/auth/check", async function (req, res) {
       const result = await userRef.set({
         "key": apiKey
       }, { merge: true });
-      return res.json({"result": "ok", "key": apiKey});
+      return res.json({"result": "ok", "key": apiKey, "message": "this is your api-key to use for Bearer auth"});
     }
   } else {
     return res.json({"result": "error", "error": "otp code not verified"});
   }
-});
+}); // /auth/check
 
-api.get("/safe/new", getAuth, async function (req, res) {
+api.get("/wallets/safe/new", getAuth, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
   const ethAdapter = new EthersAdapter({
     ethers,
@@ -261,10 +254,10 @@ api.get("/safe/new", getAuth, async function (req, res) {
   };
   const mySafe = await safeFactory.deploySafe({ safeAccountConfig });
   const newSafeAddress = mySafe.getAddress();
-  return res.json({"result": "ok", "address": newSafeAddress});
-}); // /safe/new
+  return res.json({"result": "ok", "address": newSafeAddress, "message": "new Gnosis Safe wallet created at this address"});
+}); // /wallets/safe/new
 
-api.get("/vestor/new", getAuth, checkOTP, async function (req, res) {
+api.get("/streams/vestor/new", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
   //const tokenAddress = "0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00";  // fDAIx on Goerli
   const host = "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9"; // superfluid host Goerli
@@ -280,14 +273,14 @@ api.get("/vestor/new", getAuth, checkOTP, async function (req, res) {
     contracts = req.user.contracts;
   }
   contracts.push(vestorAddress);
-  const userRef = db.collection('users').doc(user.address);
+  const userRef = db.collection('users').doc(req.user.address);
   const result = await userRef.set({
     "contracts": contracts
   }, { merge: true });
   return res.json({"result": "ok", "address": vestorAddress});
-});
+}); // /streams/vestor/new
 
-api.get("/vestor/deposit", getAuth, checkOTP, async function (req, res) {
+api.get("/streams/vestor/deposit", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
   const vestor = new ethers.Contract(
     req.q.vestor,
@@ -306,9 +299,9 @@ api.get("/vestor/deposit", getAuth, checkOTP, async function (req, res) {
   console.log(tokenAddress, req.q.amount, req.q.vestor);
   await vestor.deposit(tokenAddress, req.q.amount);
   return res.json({"result": "ok"});
-}); // /vestor/deposit
+}); // /streams/vestor/deposit
 
-api.get("/flow/new", getAuth, checkOTP, async function (req, res) {
+api.get("/streams/flow/new", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
   const vestor = new ethers.Contract(
     req.q.vestor,
@@ -320,9 +313,9 @@ api.get("/flow/new", getAuth, checkOTP, async function (req, res) {
   await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, 0, ethers.utils.formatBytes32String(req.q.ref))).wait();
   const flows = await vestor.getFlowRecipient(req.q.recipient);
   return res.json({"result": "ok", "flow": flowToObject(flows[0])});
-}); // /flow/new
+}); // /streams/flow/new
 
-api.get("/flow/replace", getAuth, checkOTP, async function (req, res) {
+api.get("/streams/flow/replace", getAuth, checkOTP, async function (req, res) {
   console.log("req.user", JSON.stringify(req.user));
   getContracts(process.env.ALLOWER_PK, providers[0]);
   const vestor = new ethers.Contract(
@@ -349,9 +342,9 @@ api.get("/flow/replace", getAuth, checkOTP, async function (req, res) {
   await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, 0, ethers.utils.formatBytes32String(req.q.ref))).wait();
   flows = await vestor.getFlowRecipient(req.q.recipient);
   return res.json({"result": "ok", "flow": flowToObject(flows[flows.length -1])});
-}); // /flow/new
+}); // /streams/flow/new
 
-api.get("/flow/stop", getAuth, checkOTP, async function (req, res) {
+api.get("/streams/flow/stop", getAuth, checkOTP, async function (req, res) {
   console.log("req.user", JSON.stringify(req.user));
   getContracts(process.env.ALLOWER_PK, providers[0]);
   const vestor = new ethers.Contract(
@@ -376,6 +369,6 @@ api.get("/flow/stop", getAuth, checkOTP, async function (req, res) {
     await (await vestor.closeStream(req.q.recipient, flow.flowIndex)).wait();
   }
   return res.json({"result": "ok"});
-}); // /flow/stop
+}); // /streams/flow/stop
 
 module.exports.api = api;
