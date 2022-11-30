@@ -17,7 +17,11 @@ Most API endpoints require authentication in the form of an API key sent as `Bea
 
 - `GET /auth/check` - Parameters: `otp` (required, one-time-password from email verification or authenicator app), `address` (required, wallet address). This verifies that the OTP is valid. If the user does not yet have an API key, this confirms their email address is valid and an api key is generated and saved to the database. In any event, if the OTP is valid, the response includes the api key for the user, which can then be saved in an app or dapp for future use.
 
-- `GET /auth/qrcode` - 
+- `GET /auth/qrcode` - (Api key required) Parameters: `format` (optional, "image" for image response). This endpoint faciliates the setup of an account in an Authenticator app. The JSON response includes a base64-encode data/image that can be used to render a QR to the user, which can be scanned by Authenticator apps to add the account.  A `base32` element in the response contains a base32-encoded key that can be manually pasted into Authenticator apps, when scanning a QR isn't feasible. Note that setting the optional `format` parameter to `image`, this endpoint will respond with the QR code image itself, instead of a JSON response, which may be convenient for apps to quikcly display the QR code to the user.
+
+## Streams
+
+
 
 
 
