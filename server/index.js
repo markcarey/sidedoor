@@ -394,4 +394,30 @@ api.get("/streams/flow/stop", getAuth, checkOTP, async function (req, res) {
   return res.json({"result": "ok", "message": `flow ${name} stopped`});
 }); // /streams/flow/stop
 
+api.get("/streams/flows", getAuth, async function (req, res) {
+  getContracts(process.env.ALLOWER_PK, providers[0]);
+  const vestor = new ethers.Contract(
+    req.q.vestor,
+    vestorJSON.abi,
+    signer
+  );
+  var flows = [];
+  var recipients = await vestor.getAllAddresses();
+  if (recipients.length > 0) {
+    for (let i = 0; i < recipients.length; i++) {
+      var recipientFlows = await vestor.getFlowRecipient(recipients[i]);
+      if (recipientFlows.length > 0) {
+        for (let j = 0; j < recipientFlows.length; j++) {
+          var f = flowToObject(recipientFlows[j]);
+          f.flowIndex = j;
+          if ( f.state != 2 ){
+            flows.push(f);
+          }
+        }
+      }
+    }
+  }
+  return res.json({"result": "ok", "flows": flows});
+});
+
 module.exports.api = api;
