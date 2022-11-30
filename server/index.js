@@ -326,9 +326,9 @@ api.get("/streams/flow/new", getAuth, checkOTP, async function (req, res) {
   );
   //var name = ethers.utils.parseBytes32String("0x416c696365000000000000000000000000000000000000000000000000000000");
   //console.log("name", name);
-  await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, 0, ethers.utils.formatBytes32String(req.q.ref))).wait();
+  await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, req.q.lumpsum, ethers.utils.formatBytes32String(req.q.ref))).wait();
   const flows = await vestor.getFlowRecipient(req.q.recipient);
-  return res.json({"result": "ok", "flow": flowToObject(flows[0])});
+  return res.json({"result": "ok", "flow": flowToObject(flows[0]), "message": "flow has been added"});
 }); // /streams/flow/new
 
 api.get("/streams/flow/replace", getAuth, checkOTP, async function (req, res) {
@@ -358,10 +358,10 @@ api.get("/streams/flow/replace", getAuth, checkOTP, async function (req, res) {
   if (flow) {
     await (await vestor.closeStream(req.q.recipient, flow.flowIndex)).wait();
   }
-  await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, 0, ethers.utils.formatBytes32String(req.q.ref))).wait();
+  await (await vestor.registerFlow(req.q.recipient, req.q.flowrate, false, req.q.start, req.q.duration, req.q.lumpsum, ethers.utils.formatBytes32String(req.q.ref))).wait();
   flows = await vestor.getFlowRecipient(req.q.recipient);
-  return res.json({"result": "ok", "flow": flowToObject(flows[flows.length -1])});
-}); // /streams/flow/new
+  return res.json({"result": "ok", "flow": flowToObject(flows[flows.length -1]), "message": "flow replaced"});
+}); // /streams/flow/replace
 
 api.get("/streams/flow/stop", getAuth, checkOTP, async function (req, res) {
   getContracts(process.env.ALLOWER_PK, providers[0]);
