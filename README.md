@@ -23,7 +23,7 @@ Most API endpoints require authentication in the form of an API key sent as `Bea
 
 ## Streams
 
-Streams are created using the following endpoints using the Superfluid protocol via [https://github.com/markcarey/tokenvesting](Token Vesting) Vestor contracts, which enable streams with future start times, predefined durations, and lump sum payments.
+Streams are created using the following endpoints using the Superfluid protocol via [Token Vesting](https://github.com/markcarey/tokenvesting) Vestor contracts, which enable streams with future start times, predefined durations, and lump sum payments.
 
 - `GET /streams/vestor/new` - Parameters: `otp` (required, code from Authenticator app), `token` (required, address of Super token to be streamed). This endpoint deploys a Vestor contract dedicated to the user.
 
