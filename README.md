@@ -5,6 +5,10 @@ The first set of Sidedoor API endpoints enabling real-time streaming of tokens, 
 
 *Note: currently supported on the Goerli testnet.*
 
+## API URL
+
+All endpoints are available at `https://api.sidedoor.tools`.
+
 ## Wallets
 
 If the user doesn't have a wallet address, one can be created via an API endpoint!
