@@ -21,14 +21,26 @@ Most API endpoints require authentication in the form of an API key sent as `Bea
 
 ## Streams
 
+Streams are created using the following endpoints using the Superfluid protocol via TokenVesting Vestor contracts, which enable streams with future start times, predefined durations, and lump sum payments.
 
+- `GET /streams/vestor/new` - Parameters: `otp` (required, code from Authenticator app), `token` (required, address of Super token to be streamed). This endpoint deploys a Vestor contract dedicated to the user.
 
+- `GET /streams/vestor/deposit` - Parameters: `otp` (required, code from Authenticator app), `vestor` (required, address of user's vestor contract), `token` (required, address of underlying non-super token to be deposited), `amount` (required, amount to be deposited, considering decimals for the token).
 
+- `GET /streams/flow/new` - Parameters: `otp` (required, code from Authenticator app), `vestor` (required, address of user's vestor contract), `recipient` (required, address to receive stream), `flowrate` (required, tokens per second to stream), `start` (required, unix timestamp), `duration` (required, seconds), `lumpsum` (optional, lump sum amount to transferred -- not streamed -- at start time), `ref` (required, text label, converted to `bytes32` server-side). This endpoint creates a `Flow` on the Vestor contract to the `recipient`. If the `start` time is now or past, the stream will be launched at the time the endpoint is called.
+
+- `GET /streams/flow/replace` - Parameters: same as for `/streams/flow/new` and the `ref` value must match the `Flow` being replaced. This endpoint will replace an existing `Flow` to a recipient with a new one that may have different values for `flowrate`, `start`, `duration`, etc. The endpoint will stop the existing `Flow` and add a new one with given parameters.
+
+- `GET /streams/flow/stop` - Parameters: `otp` (required, code from Authenticator app), `vestor` (required, address of user's vestor contract), `recipient` (required, address to receive stream), `ref` (required, text label).  This endpoint will stop a `Flow` to the `recipient` with a matching `ref` value.
+
+- `GET /streams/flows` - Parameters: `vestor` (required, address of user's vestor contract). This endpoint will list all active flows (started and not-yet-started) for the Vestor contract.
 
 
 ### TODO:
 
 - change some endpoints to `POST`
+- multi-chain support, including mainnets
 - payment flows, both saas + funding
+- support for multiple Flows per recipient address
 - grant role on Vestor to user address
 - take custody workflows for Safes (verfiy address, then add to Safe as owner)
