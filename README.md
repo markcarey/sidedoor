@@ -3,6 +3,8 @@ To reach the next billion users in web3, we need to bring them in the side door.
 
 The first set of Sidedoor API endpoints enabling real-time streaming of tokens, powered by the Superfluid protocol, along with related enpoints for Authentication and Wallet creation.
 
+*Note: currently supported on the Goerli testnet.*
+
 ## Wallets
 
 If the user doesn't have a wallet address, one can be created via an API endpoint!
@@ -21,7 +23,7 @@ Most API endpoints require authentication in the form of an API key sent as `Bea
 
 ## Streams
 
-Streams are created using the following endpoints using the Superfluid protocol via TokenVesting Vestor contracts, which enable streams with future start times, predefined durations, and lump sum payments.
+Streams are created using the following endpoints using the Superfluid protocol via [https://github.com/markcarey/tokenvesting](Token Vesting) Vestor contracts, which enable streams with future start times, predefined durations, and lump sum payments.
 
 - `GET /streams/vestor/new` - Parameters: `otp` (required, code from Authenticator app), `token` (required, address of Super token to be streamed). This endpoint deploys a Vestor contract dedicated to the user.
 
